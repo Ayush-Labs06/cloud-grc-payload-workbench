@@ -1,0 +1,3 @@
+CREATE aws_s3_bucket.logs
+CHANGE aws_security_group.web
+DELETE aws_iam_role.old_ci_role

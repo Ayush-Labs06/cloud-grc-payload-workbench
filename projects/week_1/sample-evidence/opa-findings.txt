@@ -1,0 +1,3 @@
+LOW:S3 bucket missing lifecycle rule
+MEDIUM:S3 bucket missing object lock
+HIGH:Security group allows 0.0.0.0/0 to port 22
