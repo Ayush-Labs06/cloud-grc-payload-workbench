@@ -23,3 +23,17 @@ echo "You are registered user"
 else
 echo "you are not registereed"
 fi
+
+# ----------------------          --------------------
+if [[ "$ENVIRONMENT" == "prod" ]]; then
+printf '%s\n' "production rules apply"
+elif [[ "$ENVIRONMENT" == "staging" ]]; then
+printf '%s\n' "staging rules apply"
+else
+printf '%s\n' "staging rules apply"
+fi
+
+
+
+
+

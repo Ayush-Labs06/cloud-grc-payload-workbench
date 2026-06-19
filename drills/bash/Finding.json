@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "report_id": "cloud-grc-training-2026-06-15",
+    "generated_at": "2026-06-15T10:30:00Z",
+    "workspace": "payload-workbench",
+    "account_id": "123456789012",
+    "default_region": "us-east-1",
+    "data_classification": "training",
+    "owner": "security-lab"
+  },
+  "environment": {
+    "name": "multi-cloud-lab",
+    "stage": "dev",
+    "clouds": ["aws","azure","gcp"],
+    "required_tags": ["owner","env","cost_center","data_classification"],
+    "approved_regions": ["us-east-1","us-west-2","ap-south-1","eu-west-1"]
+  },
+  "findings": [
+    {
+      "source": "terraform_plan",
+      "type": "resource_change",
+      "severity": "MEDIUM",
+      "resource": {"address":"aws_s3_bucket.logs","provider":"aws","region":"us-east-1","action":"create"},
+      "rule": {"id":"TF_PLAN_001","name":"S3 bucket created without encryption block"},
+      "metadata": {"env":"dev","owner":"platform","cost_center":"cc-1100"},
+      "evidence": {
+        "after": {"bucket":"lab-dev-logs","server_side_encryption_configuration":null}
+      },
+      "remediation": "Add aws_s3_bucket_server_side_encryption_configuration."
+    },
+    {
+      "source": "terraform_plan",
+      "type": "drift",
+      "severity": "HIGH",
+      "resource": {"address":"aws_security_group.admin","provider":"aws","region":"us-west-2","action":"update"},
+      "rule": {"id":"TF_PLAN_002","name":"Public administrative ingress"},
+      "metadata": {"env":"prod","owner":"network","ticket":"SEC-4821"},
+      "evidence": {
+        "before": {
+          "cidr_blocks": ["10.0.0.0/8"],
+          "from_port": 22
+        },
+        "after": {
+          "cidr_blocks": ["0.0.0.0/0"],
+          "from_port": 22
+        }
+      },
+      "remediation": "Restrict SSH ingress to approved bastion CIDRs."
+    },
+    {
+      "source": "checkov",
+      "type": "iac_misconfiguration",
+      "severity": "CRITICAL",
+      "check_id": "CKV_AWS_20",
+      "check_name": "S3 bucket must not allow public read access",
+      "resource": {"file":"terraform/s3.tf","line":42,"address":"aws_s3_bucket_acl.public_assets"},
+      "metadata": {"env":"prod","region":"us-east-1","service":"s3"},
+      "result": {
+        "status": "failed",
+        "evaluated_keys": ["acl"],
+        "actual": "public-read"
+      },
+      "remediation": "Use private ACL and block public access."
+    },
+    {
+      "source": "checkov",
+      "type": "iac_misconfiguration",
+      "severity": "HIGH",
+      "check_id": "CKV_AWS_260",
+      "check_name": "Lambda environment variable contains possible secret",
+      "resource": {"file":"terraform/lambda.tf","line":17,"address":"aws_lambda_function.invoice"},
+      "metadata": {"env":"prod","region":"eu-west-1","runtime":"python3.12"},
+      "result": {
+        "status": "failed",
+        "evaluated_keys": ["environment.variables.DB_PASSWORD"],
+        "actual": "plaintext value detected"
+      },
+      "remediation": "Move secrets to Secrets Manager or SSM Parameter Store."
+    },
+    {
+      "source": "opa",
+      "type": "policy_violation",
+      "severity": "MEDIUM",
+      "policy": {"package":"terraform.tags","rule":"required_tags","version":"1.4.0"},
+      "resource": {"kind":"aws_instance","name":"web","address":"aws_instance.web"},
+      "metadata": {"env":"stage","owner":"platform"},
+      "missing_tags": ["cost_center","data_classification"],
+      "decision": {"allow":false,"deny_reason":"Required metadata tags are missing"}
+    },
+    {
+      "source": "opa",
+      "type": "policy_violation",
+      "severity": "HIGH",
+      "policy": {"package":"kubernetes.security","rule":"no_privileged_containers","version":"2.1.0"},
+      "resource": {"kind":"Deployment","name":"payment-api","namespace":"payments"},
+      "metadata": {"cluster":"prod-eks-01","env":"prod","owner":"payments"},
+      "container": {"name":"api","image":"registry.local/payment-api:1.8.2","privileged":true},
+      "decision": {"allow":false,"deny_reason":"Privileged containers are not allowed"}
+    },
+    {
+      "source": "prowler",
+      "type": "cloud_runtime",
+      "severity": "HIGH",
+      "check_id": "cloudtrail_multi_region_enabled",
+      "service": "cloudtrail",
+      "resource": {"arn":"arn:aws:cloudtrail:us-east-1:123456789012:trail/org-trail","region":"us-east-1","account_id":"123456789012"},
+      "status": "FAIL",
+      "risk": "Activity in some regions may not be logged.",
+      "compliance": {
+        "frameworks": ["CIS AWS 1.5","SOC2"],
+        "controls": ["CIS-3.1","CC7.2"]
+      },
+      "remediation": "Enable multi-region CloudTrail."
+    },
+    {
+      "source": "prowler",
+      "type": "cloud_runtime",
+      "severity": "MEDIUM",
+      "check_id": "ec2_ebs_default_encryption",
+      "service": "ec2",
+      "resource": {"account_id":"123456789012","region":"ap-south-1"},
+      "status": "FAIL",
+      "risk": "New EBS volumes may be created unencrypted.",
+      "compliance": {
+        "frameworks": ["CIS AWS 1.5","PCI DSS"],
+        "controls": ["CIS-2.2.1","PCI-3.4"]
+      },
+      "remediation": "Enable default EBS encryption in the region."
+    },
+    {
+      "source": "cost_tags",
+      "type": "governance",
+      "severity": "LOW",
+      "resource": {"id":"i-0abc123def456","kind":"ec2_instance","region":"us-east-1"},
+      "metadata": {"env":"dev","owner":"","cost_center":""},
+      "required_tags": ["owner","cost_center","env"],
+      "missing_tags": ["owner","cost_center"],
+      "estimated_monthly_cost_usd": 71.42,
+      "remediation": "Apply required cost allocation tags."
+    },
+    {
+      "source": "cost_tags",
+      "type": "governance",
+      "severity": "MEDIUM",
+      "resource": {"id":"arn:aws:rds:us-west-2:123456789012:db:orders-prod","kind":"rds_instance","region":"us-west-2"},
+      "metadata": {"env":"prod","owner":"orders","cost_center":"unknown"},
+      "required_tags": ["owner","cost_center","data_classification"],
+      "missing_tags": ["data_classification"],
+      "estimated_monthly_cost_usd": 484.9,
+      "remediation": "Add data classification tag for reporting."
+    },
+    {
+      "source": "docker_scan",
+      "type": "container_image",
+      "severity": "CRITICAL",
+      "image": {"name":"registry.local/payment-api","tag":"1.8.2","digest":"sha256:1111222233334444"},
+      "vulnerability": {"id":"CVE-2025-12345","package":"openssl","installed_version":"3.0.7","fixed_version":"3.0.13"},
+      "metadata": {"env":"prod","namespace":"payments","base_image":"ubuntu:22.04"},
+      "remediation": "Rebuild image with patched openssl package."
+    },
+    {
+      "source": "docker_scan",
+      "type": "container_image",
+      "severity": "HIGH",
+      "image": {"name":"registry.local/worker","tag":"latest","digest":"sha256:9999888877776666"},
+      "vulnerability": {"id":"CONFIG-ROOT-USER","package":"image_config","installed_version":"root","fixed_version":"non-root user"},
+      "metadata": {"env":"stage","namespace":"jobs","dockerfile":"Dockerfile.worker"},
+      "remediation": "Set USER to a non-root account in the Dockerfile."
+    },
+    {
+      "source": "secrets_scan",
+      "type": "secret",
+      "severity": "CRITICAL",
+      "scanner": "gitleaks",
+      "resource": {"file":"app/config.env","line":8,"commit":"abc1234"},
+      "secret": {"kind":"aws_access_key","fingerprint":"AKIA********ABCD","verified":false},
+      "metadata": {"repo":"cloud-grc-payload-workbench","branch":"feature/lab-data"},
+      "remediation": "Revoke key, rotate credentials, and remove secret from history."
+    },
+    {
+      "source": "azure_policy",
+      "type": "cloud_runtime",
+      "severity": "HIGH",
+      "policy": {"id":"AZURE_SQL_TDE_REQUIRED","name":"SQL databases must use transparent data encryption"},
+      "resource": {"id":"/subscriptions/sub-123/resourceGroups/rg-prod/providers/Microsoft.Sql/servers/sql-prod/databases/orders","provider":"azure","region":"eastus"},
+      "metadata": {"env":"prod","owner":"data-platform"},
+      "status": "non_compliant",
+      "remediation": "Enable TDE for the database."
+    },
+    {
+      "source": "gcp_scc",
+      "type": "cloud_runtime",
+      "severity": "MEDIUM",
+      "category": "PUBLIC_BUCKET_ACL",
+      "resource": {"name":"//storage.googleapis.com/projects/_/buckets/lab-public-data","provider":"gcp","location":"us-central1"},
+      "metadata": {"project_id":"training-project-01","env":"dev","owner":"analytics"},
+      "state": "ACTIVE",
+      "remediation": "Remove allUsers and allAuthenticatedUsers from bucket IAM."
+    }
+  ],
+  "summary": {
+    "total_findings": 15,
+    "by_severity": {"CRITICAL":3,"HIGH":6,"MEDIUM":5,"LOW":1},
+    "by_source": {
+      "terraform_plan": 2,
+      "checkov": 2,
+      "opa": 2,
+      "prowler": 2,
+      "cost_tags": 2,
+      "docker_scan": 2,
+      "secrets_scan": 1,
+      "azure_policy": 1,
+      "gcp_scc": 1
+    }
+  }
+}

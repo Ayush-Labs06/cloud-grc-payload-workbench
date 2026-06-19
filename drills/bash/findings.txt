@@ -1,0 +1,10 @@
+tool=checkov|severity=LOW|id=CKV_AWS_21|resource=aws_s3_bucket.logs|env=dev|region=us-east-1|finding=S3 bucket missing lifecycle rule
+tool=checkov|severity=MEDIUM|id=CKV_AWS_18|resource=aws_s3_bucket.audit|env=prod|region=us-east-1|finding=S3 bucket missing access logging
+tool=checkov|severity=HIGH|id=CKV_AWS_24|resource=aws_security_group.admin|env=prod|region=us-west-2|finding=Security group allows 0.0.0.0/0 to port 22
+tool=checkov|severity=CRITICAL|id=CKV_AWS_20|resource=aws_s3_bucket.public_assets|env=prod|region=us-east-1|finding=S3 bucket allows public read access
+tool=opa|severity=MEDIUM|policy=terraform.tags.required|resource=aws_instance.web|env=stage|owner=platform|finding=Missing required tags: cost_center, data_classification
+tool=opa|severity=HIGH|policy=iam.no_wildcards|resource=aws_iam_policy.deploy|env=prod|owner=devops|finding=IAM policy allows wildcard actions
+tool=opa|severity=HIGH|policy=k8s.no_privileged|resource=deployment/payment-api|env=prod|namespace=payments|finding=Container runs in privileged mode
+tool=checkov|severity=MEDIUM|id=CKV_AWS_8|resource=aws_ebs_volume.db_data|env=prod|region=ap-south-1|finding=EBS volume is not encrypted
+tool=opa|severity=LOW|policy=metadata.expiry.required|resource=aws_iam_role.temp_access|env=dev|owner=security|finding=Temporary access role missing expiry metadata
+tool=checkov|severity=HIGH|id=CKV_AWS_260|resource=aws_lambda_function.invoice|env=prod|region=eu-west-1|finding=Lambda environment variable contains possible secret
