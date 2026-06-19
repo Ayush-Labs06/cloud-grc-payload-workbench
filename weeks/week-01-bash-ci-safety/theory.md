@@ -62,6 +62,41 @@ Line numbers are for quick lookup in this file. If you edit this file later, rer
 | Project build order                 | 1411 |
 | Mini reference                      | 1436 |
 
+## Fast Query Map
+
+Use this section when you know the project step or the kind of problem, but not the exact Bash concept name.
+
+| If you are trying to...                                  | Search/read these sections                                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Understand what the script is supposed to do overall     | `CI gate mental model`, `Project decision rules`, `Project build order`                                           |
+| Start the script safely                                  | `Safe script header and strict mode`, `Arguments and environment variables`, `Exit codes`                         |
+| Accept `<evidence_dir> <artifact_dir> <environment>`     | `Arguments and environment variables`, `Variables and quoting`, `Environment validation`                          |
+| Check required CI variables                              | `Arguments and environment variables`, `AWS region validation`, `Commit SHA validation`, `Pipeline ID validation` |
+| Check whether directories and files are valid            | `Directory and file checks`, `Arrays and loops for required files`, `Validation ladder`                           |
+| Handle paths that contain spaces                         | `Variables and quoting`, `Arrays and loops for required files`                                                    |
+| Create or write artifact files                           | `Redirects and artifacts`, `printf vs echo`, `Functions`                                                          |
+| Read simple one-line evidence like `secrets-scan.txt`    | `Reading one-line files`, `Severity validation`, `Finding line validation`                                        |
+| Read multiple findings from `opa-findings.txt`           | `Reading line-by-line evidence`, `Finding line validation`, `Counting findings`                                   |
+| Parse `HIGH:message`, `MEDIUM:message`, or `LOW:message` | `Finding line validation`, `Severity validation`, `case for known choices`, `Counting findings`                   |
+| Extract and normalize `metadata.env` values              | `Parsing key=value metadata`, `Metadata owner validation`, `Service name validation`, `Ticket ID validation`      |
+| Decide `PASS`, `FAIL`, or `MANUAL_APPROVAL`              | `Project decision rules`, `Counting findings`, `case for known choices`, `Exit codes`                             |
+| Understand why a command failed or exited early          | `Shell execution, exit codes, $?`, `Pipes, pipefail, PIPESTATUS`, `Debugging checklist`                           |
+| Add cleanup with temporary directories                   | `Functions`, `Exit codes`, `Debugging checklist`                                                                  |
+| Avoid common Bash mistakes                               | `Common mistakes`, `Variables and quoting`, `printf vs echo`                                                      |
+
+### Project Step Lookup
+
+| Project step               | Main theory to inspect                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Step 1: script shell       | `Safe script header and strict mode`, `Shell execution, exit codes, $?`, `Functions`                   |
+| Step 2: validate inputs    | `Arguments and environment variables`, `Directory and file checks`, `Validation ladder`                |
+| Step 3: create artifacts   | `Redirects and artifacts`, `printf vs echo`, `Variables and quoting`                                   |
+| Step 4: normalize metadata | `Parsing key=value metadata`, `Regex validation basics`, metadata validation sections                  |
+| Step 5: scan findings      | `Reading line-by-line evidence`, `Finding line validation`, `Severity validation`, `Counting findings` |
+| Step 6: decide result      | `Project decision rules`, `case for known choices`, `Exit codes`                                       |
+| Step 7: cleanup practice   | `Functions`, `Exit codes`, `Debugging checklist`                                                       |
+| Step 8: pipeline practice  | `Pipes, pipefail, PIPESTATUS`, `Debugging checklist`                                                   |
+
 ## 1 - The CI Gate Mental Model
 
 A CI gate is a sequence of checks. Each check should answer one question.
@@ -95,7 +130,7 @@ Good log shape:
 printf '%s\n' "checked identity.txt" >> "$ARTIFACT_DIR/pipeline.log"
 ```
 
-## 2 - Shell Execution Model
+## 2 - Shell Execution Model[]
 
 Bash reads a line, expands variables, performs word splitting and globbing when allowed, then runs a command.
 
@@ -127,7 +162,7 @@ else
 fi
 ```
 
-## 3 - Safe Script Header
+## 3 - Safe Script Header[]
 
 For CI-style Bash scripts:
 
@@ -388,7 +423,7 @@ Why `${AWS_REGION:-}`:
 - If `AWS_REGION` is unset, it becomes an empty string for this check.
 - Without `:-`, `set -u` would make Bash fail immediately.
 
-## 9 - Reading Files
+## 9 - Reading Files[]
 
 ### One small single-line file
 

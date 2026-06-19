@@ -1,0 +1,4 @@
+LOW:S3 bucket logging configuration should be reviewed
+LOW:Security group description is missing
+MEDIUM:RDS instance backup retention is below policy target
+MEDIUM:KMS key rotation is not enabled
